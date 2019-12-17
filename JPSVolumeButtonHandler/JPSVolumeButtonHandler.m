@@ -168,14 +168,19 @@ static CGFloat minVolume                    = 0.00001f;
     }
 }
      
- - (void)audioSessionKilled:(NSNotification*)not {
-    JPSLog(@"Audio Session KILLED, restarting", nil);
-     NSError *error = nil;
-     [self.session setActive:YES error:&error];
-     if (error) {
-         NSLog(@"%@", error);
-     }
-}
+  - (void)audioSessionKilled:(NSNotification*)not {
+     JPSLog(@"Audio Session KILLED, restarting", nil);
+      NSAssert(self.session != nil, @"ERR");
+      dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+          NSError *error = nil;
+          if (![self.session setActive:YES error:&error]) {
+              JPSLog(@"ERROR, could not start audio session", nil);
+          }
+          if (error) {
+              NSLog(@"%@", error);
+          }
+      });
+ }
 
 - (void)setInitialVolume {
     self.initialVolume = self.session.outputVolume;
