@@ -9,8 +9,11 @@
 #import "JPSVolumeButtonHandler.h"
 #import <MediaPlayer/MediaPlayer.h>
 
-// Comment/uncomment out NSLog to enable/disable logging
+#if DEBUG
+#define JPSLog(fmt, ...) NSLog(fmt, __VA_ARGS__)
+#else
 #define JPSLog(fmt, ...) //NSLog(fmt, __VA_ARGS__)
+#endif
 
 static NSString *const sessionVolumeKeyPath = @"outputVolume";
 static void *sessionContext                 = &sessionContext;
@@ -123,6 +126,8 @@ static CGFloat minVolume                    = 0.00001f;
                                              selector:@selector(audioSessionInterrupted:)
                                                  name:AVAudioSessionInterruptionNotification
                                                object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(audioSessionKilled:) name:AVAudioSessionMediaServicesWereResetNotification object:nil];
 
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(applicationDidChangeActive:)
@@ -161,6 +166,15 @@ static CGFloat minVolume                    = 0.00001f;
             JPSLog(@"Audio Session Interruption Notification case default.", nil);
             break;
     }
+}
+     
+ - (void)audioSessionKilled:(NSNotification*)not {
+    JPSLog(@"Audio Session KILLED, restarting", nil);
+     NSError *error = nil;
+     [self.session setActive:YES error:&error];
+     if (error) {
+         NSLog(@"%@", error);
+     }
 }
 
 - (void)setInitialVolume {
